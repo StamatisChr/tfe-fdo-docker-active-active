@@ -1,0 +1,137 @@
+#cloud-config
+package_update: true
+
+groups:
+ - docker
+
+system_info:
+  default_user:
+    groups: [ docker ] 
+
+packages:
+  - ca-certificates
+  - curl
+
+
+write_files:
+  - path: /etc/terraform-enterprise/docker-compose.yml
+    content: |
+      ---
+      name: "terraform-enterprise"
+      services:
+        tfe:
+          image: "images.releases.hashicorp.com/hashicorp/terraform-enterprise:${tfe_version_image}"
+          environment:
+            TFE_LICENSE: "${tfe_license}"
+            TFE_HOSTNAME: "${tfe_hostname}"
+            TFE_ENCRYPTION_PASSWORD: "${tfe_encryption_password}"
+            TFE_OPERATIONAL_MODE: "external"
+            TFE_DISK_CACHE_VOLUME_NAME: "$${COMPOSE_PROJECT_NAME}_terraform-enterprise-cache"
+            TFE_TLS_CERT_FILE: "/etc/ssl/private/terraform-enterprise/${cert}"
+            TFE_TLS_KEY_FILE: "/etc/ssl/private/terraform-enterprise/${key}"
+            TFE_TLS_CA_BUNDLE_FILE: "/etc/ssl/private/terraform-enterprise/${bundle}"
+            TFE_HTTP_PORT: ${tfe_http_port}
+            TFE_HTTPS_PORT: ${tfe_https_port}
+            # Database settings. See the configuration reference for more settings.
+            TFE_DATABASE_USER: "${tfe_database_user}"
+            TFE_DATABASE_NAME: "${tfe_database_name}"
+            TFE_DATABASE_PASSWORD: "${tfe_database_password}"
+            TFE_DATABASE_HOST: "${tfe_database_host}"
+            TFE_DATABASE_PARAMETERS: "sslmode=disable"
+            # Object storage settings. See the configuration reference for more settings.
+            TFE_OBJECT_STORAGE_TYPE: "s3"
+            TFE_OBJECT_STORAGE_S3_REGION: "${aws_region}"
+            TFE_OBJECT_STORAGE_S3_BUCKET: "${tfe_object_storage_bucket_name}"
+            TFE_OBJECT_STORAGE_S3_USE_INSTANCE_PROFILE: true  
+            #Redis settings
+            TFE_REDIS_HOST: "${tfe_redis_host}:6379"
+            TFE_REDIS_USE_TLS: "true"
+            # Vault cluster settings.
+            # If you are using the default internal vault, this should be the private routable IP address of the node itself.
+            # TFE_VAULT_CLUSTER_ADDRESS: "https://REPLACE_WITH_SED_IP:8201"
+          cap_add:
+            - IPC_LOCK
+          read_only: true
+          tmpfs:
+            - /tmp:mode=01777
+            - /run
+            - /var/log/terraform-enterprise
+          ports:
+            - "80:${tfe_http_port}"
+            - "443:${tfe_https_port}"
+            - "8201:8201"
+          volumes:
+            - type: bind
+              source: /var/run/docker.sock
+              target: /run/docker.sock
+            - type: bind
+              source: "${tfe_host_path_to_certificates}"
+              target: /etc/ssl/private/terraform-enterprise
+            - type: volume
+              source: terraform-enterprise-cache
+              target: /var/cache/tfe-task-worker/terraform
+      volumes:
+        terraform-enterprise-cache:
+    permissions: '0640'
+
+  - path: /etc/systemd/system/terraform-enterprise.service
+    content: |
+      [Unit]
+      Description=Terraform Enterprise Service
+      Requires=docker.service
+      After=docker.service network.target
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      WorkingDirectory=/etc/terraform-enterprise
+      ExecStart=/usr/bin/docker compose up -d
+      ExecStop=/usr/bin/docker compose down
+      TimeoutStartSec=0
+      [Install]
+      WantedBy=multi-user.target
+    permissions: '0640'
+    
+
+runcmd:
+  - snap install aws-cli --classic 
+# Install Docker
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo \"$VERSION_CODENAME\") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - apt-get update
+  - VERSION_STRING=5:26.1.4-1~ubuntu.24.04~noble
+  - apt-get install -y docker-ce=$VERSION_STRING docker-ce-cli=$VERSION_STRING containerd.io docker-buildx-plugin docker-compose-plugin
+  - usermod -a -G docker ubuntu
+# Configure UFW for Docker
+  - ufw allow in on docker0
+# Create necessary directories
+  - mkdir -p ${tfe_host_path_to_certificates}
+# copy certificate files from s3
+  - aws s3 cp s3://tfe-shared-files-pxpxppxpxapxppxa/certificate.pem /tmp/
+  - aws s3 cp s3://tfe-shared-files-pxpxppxpxapxppxa/chain.pem /tmp/
+  - aws s3 cp s3://tfe-shared-files-pxpxppxpxapxppxa/private.key /tmp/ 
+  - cat /tmp/chain.pem >> /tmp/certificate.pem
+  - cp /tmp/certificate.pem ${tfe_host_path_to_certificates}/${cert}
+  - cp /tmp/private.key ${tfe_host_path_to_certificates}/${key}
+  - cp /tmp/certificate.pem ${tfe_host_path_to_certificates}/${bundle}
+  - chmod 400 ${tfe_host_path_to_certificates}/${cert}
+  - chmod 400 ${tfe_host_path_to_certificates}/${key}
+  - chmod 400 ${tfe_host_path_to_certificates}/${bundle}
+
+  - MYLOCALIP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
+  - echo $MYLOCALIP
+  - sed -i 's/REPLACE_WITH_SED_IP/'$MYLOCALIP'/g' /var/lib/terraform-enterprise/docker-compose.yml
+# Spawn Certbot container to generate TLS certificates
+#  - docker run --rm -p 80:80 -v ${tfe_host_path_to_certificates}:/etc/letsencrypt/archive/${tfe_hostname} certbot/certbot certonly --standalone --non-interactive --agree-tos --register-unsafely-without-email --preferred-challenges http -d ${tfe_hostname}
+# Log in to the Terraform Enterprise container image registry and pull the image
+  - echo "${tfe_license}" | docker login --username terraform images.releases.hashicorp.com --password-stdin
+  - docker pull images.releases.hashicorp.com/hashicorp/terraform-enterprise:${tfe_version_image}
+# Enable and start the Terraform Enterprise service
+  - systemctl enable --now terraform-enterprise
+# Wait TFE to start  
+  - while [ "$(curl -fsS https://${tfe_hostname}/_health_check)" != "OK" ]; do echo "$(date +"%Y-%m-%d %H:%M:%S") Waiting TFE to start..."; sleep 20; done
+# Get admin token
+  - IACT_TOKEN=$(docker exec terraform-enterprise-tfe-1 tfectl admin token --url)
+# echo IACT token in a file
+  - echo $IACT_TOKEN > /etc/terraform-enterprise/token.txt
