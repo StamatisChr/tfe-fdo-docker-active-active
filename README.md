@@ -93,7 +93,7 @@ Wait until you see the apply completed message and the output values.
 Example:
 ```
 Apply complete! Resources: 38 added, 0 changed, 0 destroyed.
-
+```
 Wait about 10-15 minutes for Terraform Enterprise to initialize.
 
 Visit the official documentation to learn more about Terraform Enterprise application administration:
