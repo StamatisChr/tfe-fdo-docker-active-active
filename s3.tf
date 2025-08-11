@@ -1,14 +1,14 @@
 # S3 Bucket
 locals {
   bucket_names = toset([
-    "tfe-data-bucket-pxaxaxppxpxxpx",
-    "tfe-shared-files-pxpxppxpxapxppxa",
+    "tfe-data-bucket",
+    "tfe-shared-files",
   ])
 }
 
 resource "aws_s3_bucket" "tfe_bucket" {
   for_each      = local.bucket_names
-  bucket        = each.key
+  bucket        = "${each.key}-${random_pet.hostname_suffix.id}"
   force_destroy = true
 
   tags = {

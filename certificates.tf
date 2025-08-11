@@ -37,8 +37,6 @@ resource "acme_certificate" "certificate" {
   }
 }
 
-
-# Import the certificate into AWS Certificate Manager
 resource "aws_acm_certificate" "acm_cert" {
   private_key       = tls_private_key.cert_key.private_key_pem
   certificate_body  = acme_certificate.certificate.certificate_pem
@@ -50,34 +48,30 @@ resource "aws_acm_certificate" "acm_cert" {
   }
 }
 
-
-# --- Upload Certificate Body to S3 ---
 resource "aws_s3_object" "cert_body" {
-  bucket  = "tfe-shared-files-pxpxppxpxapxppxa"
-  key     = "certificate.pem"
-  content = acme_certificate.certificate.certificate_pem
-  acl     = "private"
+  bucket       = aws_s3_bucket.tfe_bucket["tfe-shared-files"].id
+  key          = "certificate.pem"
+  content      = acme_certificate.certificate.certificate_pem
+  acl          = "private"
   content_type = "application/x-pem-file"
-  depends_on = [ aws_s3_bucket.tfe_bucket ]
+  depends_on   = [aws_s3_bucket.tfe_bucket]
 }
 
-# --- Upload Private Key to S3 ---
 resource "aws_s3_object" "private_key" {
-  bucket  = "tfe-shared-files-pxpxppxpxapxppxa"
-  key     = "private.key"
-  content = tls_private_key.cert_key.private_key_pem
-  acl     = "private"
+  bucket       = aws_s3_bucket.tfe_bucket["tfe-shared-files"].id
+  key          = "private.key"
+  content      = tls_private_key.cert_key.private_key_pem
+  acl          = "private"
   content_type = "application/x-pem-file"
-  depends_on = [ aws_s3_bucket.tfe_bucket ]
+  depends_on   = [aws_s3_bucket.tfe_bucket]
 }
 
-# --- Upload Certificate Chain to S3 ---
 resource "aws_s3_object" "cert_chain" {
-  bucket  = "tfe-shared-files-pxpxppxpxapxppxa"
-  key     = "chain.pem"
-  content = acme_certificate.certificate.issuer_pem
-  acl     = "private"
+  bucket       = aws_s3_bucket.tfe_bucket["tfe-shared-files"].id
+  key          = "chain.pem"
+  content      = acme_certificate.certificate.issuer_pem
+  acl          = "private"
   content_type = "application/x-pem-file"
-  depends_on = [ aws_s3_bucket.tfe_bucket ]
+  depends_on   = [aws_s3_bucket.tfe_bucket]
 }
 

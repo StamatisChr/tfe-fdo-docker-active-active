@@ -18,9 +18,17 @@ data "aws_ami" "ubuntu_2404" {
   }
 }
 
-data "aws_vpc" "my-default" {}
+data "aws_vpc" "default" {
+  default = true
+}
 
-# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/route53_zone
+data "aws_subnets" "default-vpc-subnets" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+
 data "aws_route53_zone" "my_aws_dns_zone" {
   name = var.hosted_zone_name
 

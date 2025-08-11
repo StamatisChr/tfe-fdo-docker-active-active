@@ -3,54 +3,6 @@ resource "random_pet" "hostname_suffix" {
   length = 2
 }
 
-# EC2 instance
-resource "aws_instance" "tfe_instance" {
-  ami             = data.aws_ami.ubuntu_2404.id
-  instance_type   = var.tfe_instance_class
-  security_groups = [aws_security_group.tfe_sg.name]
-
-  iam_instance_profile = aws_iam_instance_profile.ec2_s3_access.name
-
-  user_data = templatefile("./templates/user_data_cloud_init.tftpl", {
-    tfe_host_path_to_certificates  = var.tfe_host_path_to_certificates
-    tfe_license                    = var.tfe_license
-    tfe_version_image              = var.tfe_version_image
-    tfe_hostname                   = "${var.tfe_dns_record}-${random_pet.hostname_suffix.id}.${var.hosted_zone_name}"
-    tfe_http_port                  = var.tfe_http_port
-    tfe_https_port                 = var.tfe_https_port
-    tfe_encryption_password        = var.tfe_encryption_password
-    cert                           = var.lets_encrypt_cert
-    bundle                         = var.lets_encrypt_cert
-    key                            = var.lets_encrypt_key
-    tfe_database_user              = var.tfe_database_user
-    tfe_database_name              = var.tfe_database_name
-    tfe_database_password          = var.tfe_database_password
-    tfe_database_host              = aws_db_instance.tfe_postgres.endpoint
-    aws_region                     = var.aws_region
-    tfe_object_storage_bucket_name = tolist(local.bucket_names)[0]
-    tfe_redis_host                 = aws_elasticache_cluster.tfe_redis.cache_nodes[0].address
-  })
-
-  ebs_optimized = true
-  root_block_device {
-    volume_size = 120
-    volume_type = "gp3"
-
-  }
-
-  tags = {
-    Name = "stam-${random_pet.hostname_suffix.id}"
-  }
-}
-
-resource "aws_eip" "tfe_eip" {
-  instance = aws_instance.tfe_instance.id
-
-  tags = {
-    Name = "stam-${random_pet.hostname_suffix.id}"
-  }
-}
-
 #### EC2 security group ######
 resource "aws_security_group" "tfe_sg" {
   name        = "tfe_sg-${random_pet.hostname_suffix.id}"
@@ -79,7 +31,7 @@ resource "aws_vpc_security_group_ingress_rule" "port_80_http" {
 
 resource "aws_vpc_security_group_ingress_rule" "port_6379_redis" {
   security_group_id = aws_security_group.tfe_sg.id
-  cidr_ipv4         = data.aws_vpc.my-default.cidr_block
+  cidr_ipv4         = data.aws_vpc.default.cidr_block
   from_port         = 6379
   ip_protocol       = "tcp"
   to_port           = 6379
@@ -87,7 +39,7 @@ resource "aws_vpc_security_group_ingress_rule" "port_6379_redis" {
 
 resource "aws_vpc_security_group_ingress_rule" "port_8201_vault" {
   security_group_id = aws_security_group.tfe_sg.id
-  cidr_ipv4         = data.aws_vpc.my-default.cidr_block
+  cidr_ipv4         = data.aws_vpc.default.cidr_block
   from_port         = 8201
   ip_protocol       = "tcp"
   to_port           = 8201
@@ -96,7 +48,7 @@ resource "aws_vpc_security_group_ingress_rule" "port_8201_vault" {
 
 resource "aws_vpc_security_group_ingress_rule" "port_5432_postgres" {
   security_group_id = aws_security_group.tfe_sg.id
-  cidr_ipv4         = data.aws_vpc.my-default.cidr_block
+  cidr_ipv4         = data.aws_vpc.default.cidr_block
   from_port         = 5432
   ip_protocol       = "tcp"
   to_port           = 5432
@@ -111,7 +63,7 @@ resource "aws_vpc_security_group_egress_rule" "allow_all_outbound_traffic_ipv4" 
 
 # IAM Role for EC2 to access S3 
 resource "aws_iam_role" "ec2_s3_access" {
-  name = "ec2_s3_access_role"
+  name = "ec2_s3_access_role-${random_pet.hostname_suffix.id}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -129,7 +81,7 @@ resource "aws_iam_role" "ec2_s3_access" {
 
 # policy to allow ec2 to access only the tfe s3 bucket 
 resource "aws_iam_policy" "s3_access_policy" {
-  name        = "s3_access_policy"
+  name        = "s3_access_policy-${random_pet.hostname_suffix.id}"
   description = "Policy to allow EC2 access to S3 bucket"
 
   policy = jsonencode({
@@ -156,12 +108,62 @@ resource "aws_iam_role_policy_attachment" "s3_attach" {
 }
 
 resource "aws_iam_instance_profile" "ec2_s3_access" {
-  name = "ec2_s3_access_profile"
+  name = "ec2_s3_access_profile-${random_pet.hostname_suffix.id}"
   role = aws_iam_role.ec2_s3_access.name
+
+  tags = {
+    Name = "tfe-${random_pet.hostname_suffix.id}"
+  }
 }
 
-# add the SecurityComputeAccess policy to IAM role connected to your EC2 instance
 resource "aws_iam_role_policy_attachment" "SSM" {
   role       = aws_iam_role.ec2_s3_access.name
   policy_arn = data.aws_iam_policy.SecurityComputeAccess.arn
 }
+
+
+# DNS 
+resource "aws_route53_record" "tfe-a-record" {
+  zone_id = data.aws_route53_zone.my_aws_dns_zone.id
+  name    = "${var.tfe_dns_record}-${random_pet.hostname_suffix.id}.${var.hosted_zone_name}"
+  type    = "CNAME"
+  ttl     = 120
+  records = [aws_lb.tfe_load_balancer.dns_name]
+
+}
+
+resource "aws_db_instance" "tfe_postgres" {
+  identifier             = "tfe-p-${random_pet.hostname_suffix.id}"
+  engine                 = "postgres"
+  engine_version         = "14.17"
+  instance_class         = var.db_instance_class
+  allocated_storage      = 50
+  storage_type           = "gp3"
+  username               = var.tfe_database_user
+  db_name                = var.tfe_database_name
+  password               = var.tfe_database_password
+  vpc_security_group_ids = [aws_security_group.tfe_sg.id]
+  skip_final_snapshot    = true
+  deletion_protection    = false
+
+  tags = {
+    Name = "stam-${random_pet.hostname_suffix.id}"
+  }
+}
+
+
+resource "aws_elasticache_cluster" "tfe_redis" {
+  cluster_id           = "tfe-redis-${random_pet.hostname_suffix.id}"
+  engine               = "redis"
+  node_type            = "cache.t3.medium"
+  num_cache_nodes      = 1
+  parameter_group_name = "default.redis7"
+  engine_version       = "7.1"
+  port                 = 6379
+  security_group_ids   = [aws_security_group.tfe_sg.id]
+
+  tags = {
+    Name = "tfe-${random_pet.hostname_suffix.id}"
+  }
+}
+
