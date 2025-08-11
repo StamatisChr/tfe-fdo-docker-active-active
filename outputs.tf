@@ -19,18 +19,6 @@ output "tfe-docker-fqdn" {
 
 }
 
-
-output "tfe-fqdn" {
-  description = "tfe fqdn"
-  value       = "${var.tfe_dns_record}-${random_pet.hostname_suffix.id}.${var.hosted_zone_name}"
-}
-
-
-
-# output "start_aws_ssm_session" {
-#   value = "aws ssm start-session --target ${aws_instance.tfe_instance.id} --region ${var.aws_region}"
-# }
-
 output "tfe_version" {
   value = var.tfe_version_image
 }

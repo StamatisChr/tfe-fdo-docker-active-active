@@ -68,12 +68,12 @@ resource "aws_lb" "tfe_load_balancer" {
 resource "aws_autoscaling_group" "tfe_aa" {
   vpc_zone_identifier = data.aws_subnets.default-vpc-subnets.ids
 
-  desired_capacity = 2
+  desired_capacity = 1
   max_size         = 3
   min_size         = 1
 
   target_group_arns = [
-    values(aws_lb_target_group.tfe_tg)[*].arn
+    for target_group in aws_lb_target_group.tfe_tg : target_group.arn
   ]
 
   launch_template {
