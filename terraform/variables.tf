@@ -15,6 +15,12 @@ variable "db_instance_class" {
   default     = "db.t3.large"
 }
 
+variable "redis_node_type" {
+  description = "The instance type for the Redis nodes"
+  type        = string
+  default     = "cache.t3.large"
+}
+
 variable "hosted_zone_name" {
   description = "The zone ID of my doormat hosted route53 zone"
   type        = string

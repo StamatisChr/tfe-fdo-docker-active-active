@@ -155,7 +155,7 @@ resource "aws_db_instance" "tfe_postgres" {
 resource "aws_elasticache_cluster" "tfe_redis" {
   cluster_id           = "tfe-redis-${random_pet.hostname_suffix.id}"
   engine               = "redis"
-  node_type            = "cache.t3.medium"
+  node_type            = var.redis_node_type
   num_cache_nodes      = 1
   parameter_group_name = "default.redis7"
   engine_version       = "7.1"
