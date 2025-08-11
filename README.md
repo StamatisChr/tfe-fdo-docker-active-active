@@ -107,9 +107,6 @@ terraform destroy
 ```
 type yes when prompted.
 
-Wait for the resource deletion.
-```
-Destroy complete! Resources: 18 destroyed.
-```
+Wait for the resources deletion. It can take 20 minutes or more.
 
 Done.
