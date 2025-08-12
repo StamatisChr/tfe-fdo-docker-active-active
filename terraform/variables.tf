@@ -18,7 +18,7 @@ variable "db_instance_class" {
 variable "redis_node_type" {
   description = "The instance type for the Redis nodes"
   type        = string
-  default     = "cache.t3.large"
+  default     = "cache.t3.medium"
 }
 
 variable "hosted_zone_name" {
