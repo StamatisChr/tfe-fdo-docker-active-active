@@ -96,6 +96,10 @@ Apply complete! Resources: 38 added, 0 changed, 0 destroyed.
 ```
 Wait about 10-15 minutes for Terraform Enterprise to initialize.
 
+Create initial admin user
+Connect to your EC2 instance via AWS SSM then follow the steps for Docker from the official documentation:
+https://developer.hashicorp.com/terraform/enterprise/deploy/initial-admin-user 
+
 Visit the official documentation to learn more about Terraform Enterprise application administration:
 https://developer.hashicorp.com/terraform/enterprise/application-administration/general
 
