@@ -2,7 +2,7 @@
 
 ## What is this guide about?
 
-This guide is to have Terraform Enterprise running with Docker.
+This guide is to have Terraform Enterprise running with Docker on an Active Active operational mode.
 
 ## Prerequisites 
 
