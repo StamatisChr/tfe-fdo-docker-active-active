@@ -3,6 +3,11 @@ resource "random_pet" "hostname_suffix" {
   length = 2
 }
 
+resource "random_string" "iact_token" {
+  length  = 16
+  special = false
+}
+
 #### EC2 security group ######
 resource "aws_security_group" "tfe_sg" {
   name        = "tfe_sg-${random_pet.hostname_suffix.id}"
@@ -123,11 +128,11 @@ resource "aws_iam_role_policy_attachment" "SSM" {
 
 
 # DNS 
-resource "aws_route53_record" "tfe-a-record" {
+resource "aws_route53_record" "tfe" {
   zone_id = data.aws_route53_zone.my_aws_dns_zone.id
   name    = "${var.tfe_dns_record}-${random_pet.hostname_suffix.id}.${var.hosted_zone_name}"
   type    = "CNAME"
-  ttl     = 120
+  ttl     = 60
   records = [aws_lb.tfe_load_balancer.dns_name]
 
 }
@@ -166,4 +171,3 @@ resource "aws_elasticache_cluster" "tfe_redis" {
     Name = "tfe-${random_pet.hostname_suffix.id}"
   }
 }
-

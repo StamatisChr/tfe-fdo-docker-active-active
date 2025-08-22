@@ -23,6 +23,7 @@ data "cloudinit_config" "tfe_user_data" {
       tfe_object_storage_bucket_name = "${tolist(local.bucket_names)[0]}-${random_pet.hostname_suffix.id}"
       tfe_shared_bucket_name         = "${tolist(local.bucket_names)[1]}-${random_pet.hostname_suffix.id}"
       tfe_redis_host                 = aws_elasticache_cluster.tfe_redis.cache_nodes[0].address
+      tfe_iact_token                 = random_string.iact_token.result
     })
   }
 }

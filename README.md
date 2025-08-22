@@ -40,7 +40,7 @@ git clone git@github.com:StamatisChr/tfe-fdo-docker-active-active.git
 
 When the repository cloning is finished, change directory to the repo’s terraform directory:
 ```
-cd tfe-fdo-docker-active-active/terraform
+cd tfe-fdo-docker-active-active
 ```
 
 Here you need to create a `variables.auto.tfvars` file with your specifications. Use the example tfvars file.
@@ -57,17 +57,16 @@ vim variables.auto.tfvars
 ```
 # example tfvars file
 # do not change the variable names on the left column
-# replace only the values in the "< >" placeholders
+# replace only the values in the " " placeholders
 
-aws_region                    = "<aws_region>"             # Set here your desired AWS region, example: eu-west-1
 hosted_zone_name              = "<dns_zone_name>"          # your AWS route53 DNS zone name
-tfe_license                   = "<tfe_license_string>"     # TFE license string
-tfe_encryption_password       = "<type_a_password>"        # TFE encryption password
 tfe_version_image             = "<tfe_version>"            # desired TFE version, example: v202410-1
-tfe_database_password         = "<type_a_password>"        # The password for the external TFE database
+tfe_license                   = "<tfe_license_string>"     # TFE license string
 ```
 
 To populate the file according to the file comments and save.
+
+The default AWS region the resources will be created is `eu-west-1`, if you need to change the AWS region and the default passwords, you can edit them in `variables.tf` or by adding an entry in the `variables.auto.tfvars` with the variable name and the value you want.
 
 Initialize terraform, run:
 ```
@@ -94,18 +93,82 @@ Example:
 ```
 Apply complete! Resources: 38 added, 0 changed, 0 destroyed.
 ```
-Wait about 10-15 minutes for Terraform Enterprise to initialize.
 
-Create initial admin user
-Connect to your EC2 instance via AWS SSM then follow the steps for Docker from the official documentation:
-https://developer.hashicorp.com/terraform/enterprise/deploy/initial-admin-user 
+## Wait for TFE resources creation
 
-Visit the official documentation to learn more about Terraform Enterprise application administration:
-https://developer.hashicorp.com/terraform/enterprise/application-administration/general
+change directory:
+```
+cd 00-wait-tfe-start
+```
+
+run the terraform configuration:
+```
+terraform init
+```
+
+```
+terraform apply --auto-approve
+```
+
+This can take 15-20 minutes.
+Wait until the run is completed.
+
+## Create initial admin user
+
+change directory:
+```
+cd ../01-create-initial-admin
+```
+
+run the terraform configuration:
+```
+terraform init
+```
+
+```
+terraform apply --auto-approve
+```
+
+## Create a TFE organization and workspace
+
+change directory:
+```
+cd ../02-tfe-org-ws
+```
+
+run the terraform configuration:
+```
+terraform init
+```
+
+```
+terraform apply --auto-approve
+```
+
+## Run terraform configuration on TFE with CLI-driven remote run workflow
+
+change directory:
+```
+cd ../03-example-cli-driven-ws
+```
+
+```
+terraform init
+```
+
+INSTRUCTIONS MISSING
+
 
 ## Clean up
 
 To delete all the resources, run:
+
+```
+cd ..
+```
+
+Now in the `tfe-fdo-docker-active-active` run:
+
 ```
 terraform destroy
 ```

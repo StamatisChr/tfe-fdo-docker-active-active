@@ -1,6 +1,7 @@
 variable "aws_region" {
   description = "The AWS region in use to spawn the resources"
   type        = string
+  default     = "eu-west-1"
 }
 
 variable "tfe_instance_class" {
@@ -46,6 +47,7 @@ variable "tfe_https_port" {
 variable "tfe_encryption_password" {
   description = "TFE encryption password"
   type        = string
+  default = "Password1#"
 }
 
 variable "tfe_version_image" {
@@ -87,10 +89,41 @@ variable "tfe_database_name" {
 variable "tfe_database_password" {
   description = "The database password of the database name in the RDS instance"
   type        = string
+  default     = "Password1#"
 }
 
 variable "tfe_dns_record" {
   description = "The DNS record for the TFE instance"
   type        = string
   default     = "tfe-docker-aa"
+}
+
+variable "tfe_admin_user" {
+  description = "The admin user for the TFE instance"
+  type        = string
+  default     = "admin"
+}
+
+variable "tfe_admin_password" {
+  description = "The password for the TFE admin user"
+  type        = string
+  default     = "Password1#"
+}
+
+variable "tfe_admin_email" {
+  description = "The email for the TFE admin user"
+  type        = string
+  default     = "example@example.com"
+}
+
+variable "tfe_org_name" {
+  description = "The name of the TFE organization"
+  type        = string
+  default     = "example-org"
+}
+
+variable "tfe_workspace_name" {
+  description = "The name of the TFE workspace"
+  type        = string
+  default     = "example-workspace"
 }
