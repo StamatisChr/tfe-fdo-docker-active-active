@@ -18,7 +18,9 @@ This guide is to have Terraform Enterprise running with Docker.
 
 - Terraform installed on your computer
 
-## Create the AWS resources and start TFE
+# Create the AWS resources and start TFE
+
+## Set AWS credentials
 
 Export your AWS access key and secret access key as environment variables:
 ```
@@ -30,7 +32,7 @@ export AWS_SECRET_ACCESS_KEY=<your_secret_key>
 ```
 
 
-Clone the repository to your computer.
+## Clone the repository to your computer
 
 Open your cli and run:
 ```
@@ -68,6 +70,8 @@ To populate the file according to the file comments and save.
 
 The default AWS region the resources will be created is `eu-west-1`, if you need to change the AWS region and the default passwords, you can edit them in `variables.tf` or by adding an entry in the `variables.auto.tfvars` with the variable name and the value you want.
 
+## Create TFE infrastructure
+
 Initialize terraform, run:
 ```
 terraform init
@@ -91,7 +95,7 @@ Wait until you see the apply completed message and the output values.
 
 Example:
 ```
-Apply complete! Resources: 38 added, 0 changed, 0 destroyed.
+Apply complete! Resources: 40 added, 0 changed, 0 destroyed.
 ```
 
 ## Wait for TFE resources creation
@@ -128,6 +132,7 @@ terraform init
 ```
 terraform apply --auto-approve
 ```
+When the run is finished continue to the next step.
 
 ## Create a TFE organization and workspace
 
@@ -145,6 +150,21 @@ terraform init
 terraform apply --auto-approve
 ```
 
+When the run is finished use the output values to login to TFE.
+- Copy the `terraform_login` output command, paste it on your CLI and run it.
+
+Type `yes` when prompted.
+
+You will be redirected to TFE login page.
+  
+- Use the `tfe_admin_user` and `tfe_admin_password` as username and password to login to TFE.
+
+- Create a token and copy it.
+
+- Back to your CLI paste the token to the prompt
+
+Continue to the next step.
+
 ## Run terraform configuration on TFE with CLI-driven remote run workflow
 
 change directory:
@@ -152,16 +172,34 @@ change directory:
 cd ../03-example-cli-driven-ws
 ```
 
+run the terraform configuration:
 ```
 terraform init
 ```
+```
+terraform apply --auto-approve 
+```
 
-INSTRUCTIONS MISSING
+Example output:
+```
+Preparing the remote apply...
 
+To view this run in a browser, visit:
+https://unified-prawn.stamatios-chrysinas.sbx.hashidemos.io/app/example-org/example-workspace/runs/run-5xDKMBDEf6v1evj1
+```
+
+You can use the `To view this run in a browser, visit:` URL to see this run on TFE.
+
+## Destroy the terraform run resources
+
+Run:
+```
+terraform apply --auto-approve
+```
 
 ## Clean up
 
-To delete all the resources, run:
+To delete all the infrastructure resources, run:
 
 ```
 cd ..
