@@ -194,7 +194,7 @@ You can use the `To view this run in a browser, visit:` URL to see this run on T
 
 Run:
 ```
-terraform apply --auto-approve
+terraform destroy --auto-approve
 ```
 
 ## Clean up
