@@ -157,7 +157,7 @@ Type `yes` when prompted.
 
 You will be redirected to TFE login page.
   
-- Use the `tfe_admin_user` and `tfe_admin_password` as username and password to login to TFE.
+- Use the `tfe_admin_user` and `tfe_admin_password` output values as username and password to login to TFE.
 
 - Create a token and copy it.
 
