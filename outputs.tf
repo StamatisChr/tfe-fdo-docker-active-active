@@ -13,19 +13,8 @@ output "aws_region" {
 
 }
 
-output "tfe-docker-fqdn" {
-  description = "tfe-fqdn"
-  value       = "https://${var.tfe_dns_record}-${random_pet.hostname_suffix.id}.${var.hosted_zone_name}"
-
-}
-
 output "tfe_hostname" {
-  value = "${var.tfe_dns_record}-${random_pet.hostname_suffix.id}.${var.hosted_zone_name}"
-}
-
-output "tfe_health_check" {
-  value = "https://${var.tfe_dns_record}-${random_pet.hostname_suffix.id}.${var.hosted_zone_name}/_health_check"
-
+  value = "${random_pet.hostname_suffix.id}.${var.hosted_zone_name}"
 }
 
 output "tfe_version" {

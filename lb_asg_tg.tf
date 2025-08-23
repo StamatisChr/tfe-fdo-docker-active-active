@@ -13,7 +13,7 @@ locals {
 resource "aws_lb_target_group" "tfe_tg" {
   for_each = local.target_group_ports
 
-  name        = "tfe-${upper(each.key)}-${random_pet.hostname_suffix.id}"
+  name        = "tfe-${upper(each.key)}"
   port        = each.value.port
   protocol    = each.value.protocol
   vpc_id      = data.aws_vpc.default.id

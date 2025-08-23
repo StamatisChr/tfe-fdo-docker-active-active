@@ -8,7 +8,7 @@ data "cloudinit_config" "tfe_user_data" {
       aws_region                     = var.aws_region
       tfe_license                    = var.tfe_license
       tfe_version_image              = var.tfe_version_image
-      tfe_hostname                   = "${var.tfe_dns_record}-${random_pet.hostname_suffix.id}.${var.hosted_zone_name}"
+      tfe_hostname                   = "${random_pet.hostname_suffix.id}.${var.hosted_zone_name}"
       tfe_http_port                  = var.tfe_http_port
       tfe_https_port                 = var.tfe_https_port
       tfe_encryption_password        = var.tfe_encryption_password
@@ -20,14 +20,15 @@ data "cloudinit_config" "tfe_user_data" {
       tfe_database_name              = var.tfe_database_name
       tfe_database_password          = var.tfe_database_password
       tfe_database_host              = aws_db_instance.tfe_postgres.endpoint
-      tfe_object_storage_bucket_name = "${tolist(local.bucket_names)[0]}-${random_pet.hostname_suffix.id}"
-      tfe_shared_bucket_name         = "${tolist(local.bucket_names)[1]}-${random_pet.hostname_suffix.id}"
+      tfe_object_storage_bucket_name = "${tolist(local.bucket_names)[0]}-${random_pet.hostname_suffix.id}-${lower(random_string.s3.id)}"
+      tfe_shared_bucket_name         = "${tolist(local.bucket_names)[1]}-${random_pet.hostname_suffix.id}-${lower(random_string.s3.id)}"
       tfe_redis_host                 = aws_elasticache_cluster.tfe_redis.cache_nodes[0].address
       tfe_iact_token                 = random_string.iact_token.result
     })
   }
 }
 
+# launch template for TFE instances
 resource "aws_launch_template" "tfe_launch_template" {
   name_prefix   = "tfe-${random_pet.hostname_suffix.id}"
   image_id      = data.aws_ami.ubuntu_2404.id

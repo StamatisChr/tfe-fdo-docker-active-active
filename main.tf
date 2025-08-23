@@ -1,10 +1,15 @@
-## random pet name to make the TFE fqdn change in every deployment 
+
 resource "random_pet" "hostname_suffix" {
   length = 2
 }
 
 resource "random_string" "iact_token" {
   length  = 16
+  special = false
+}
+
+resource "random_string" "s3" {
+  length  = 5
   special = false
 }
 
@@ -130,7 +135,7 @@ resource "aws_iam_role_policy_attachment" "SSM" {
 # DNS 
 resource "aws_route53_record" "tfe" {
   zone_id = data.aws_route53_zone.my_aws_dns_zone.id
-  name    = "${var.tfe_dns_record}-${random_pet.hostname_suffix.id}.${var.hosted_zone_name}"
+  name    = "${random_pet.hostname_suffix.id}.${var.hosted_zone_name}"
   type    = "CNAME"
   ttl     = 60
   records = [aws_lb.tfe_load_balancer.dns_name]
@@ -169,5 +174,45 @@ resource "aws_elasticache_cluster" "tfe_redis" {
 
   tags = {
     Name = "tfe-${random_pet.hostname_suffix.id}"
+  }
+}
+
+# ---------------
+# AWS s3
+# ---------------
+locals {
+  bucket_names = toset([
+    "data",
+    "shared",
+  ])
+}
+
+resource "aws_s3_bucket" "tfe_bucket" {
+  for_each      = local.bucket_names
+  bucket        = "${each.key}-${random_pet.hostname_suffix.id}-${lower(random_string.s3.id)}"
+  force_destroy = true
+
+  tags = {
+    Name = "${random_pet.hostname_suffix.id}"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "tfe_bucket_access" {
+  for_each = aws_s3_bucket.tfe_bucket
+  bucket   = each.value.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+
+}
+
+resource "aws_s3_bucket_versioning" "versioning_example" {
+  for_each = aws_s3_bucket.tfe_bucket
+  bucket   = each.value.id
+
+  versioning_configuration {
+    status = "Enabled"
   }
 }

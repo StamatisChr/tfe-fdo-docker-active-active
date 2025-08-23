@@ -47,7 +47,7 @@ variable "tfe_https_port" {
 variable "tfe_encryption_password" {
   description = "TFE encryption password"
   type        = string
-  default = "Password1#"
+  default     = "Password1#"
 }
 
 variable "tfe_version_image" {
@@ -64,14 +64,14 @@ variable "tfe_host_path_to_certificates" {
 variable "lets_encrypt_cert" {
   description = "value"
   type        = string
-  default     = "fullchain1.pem"
+  default     = "fullchain.pem"
 
 }
 
 variable "lets_encrypt_key" {
   description = "value"
   type        = string
-  default     = "privkey1.pem"
+  default     = "privkey.pem"
 }
 
 variable "tfe_database_user" {
@@ -90,12 +90,6 @@ variable "tfe_database_password" {
   description = "The database password of the database name in the RDS instance"
   type        = string
   default     = "Password1#"
-}
-
-variable "tfe_dns_record" {
-  description = "The DNS record for the TFE instance"
-  type        = string
-  default     = "tfe-docker-aa"
 }
 
 variable "tfe_admin_user" {

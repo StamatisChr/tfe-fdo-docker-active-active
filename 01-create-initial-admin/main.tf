@@ -1,3 +1,4 @@
+# use terraform_remote_state data source to fetch outputs from the TFE infrastructure
 data "terraform_remote_state" "tfe-infra" {
   backend = "local"
   config = {
@@ -5,6 +6,7 @@ data "terraform_remote_state" "tfe-infra" {
   }
 }
 
+# mastercard restapi provider for API calls
 terraform {
   required_providers {
     restapi = {
@@ -14,8 +16,9 @@ terraform {
   }
 }
 
+# Configure the REST API Provider
 provider "restapi" {
-  uri                  = data.terraform_remote_state.tfe-infra.outputs.tfe-docker-fqdn
+  uri                  = "https://${data.terraform_remote_state.tfe-infra.outputs.tfe_hostname}"
   write_returns_object = true
 
   headers = {
@@ -23,6 +26,7 @@ provider "restapi" {
   }
 }
 
+# Create the payload json and make the API call to create the initial admin user
 resource "restapi_object" "initial_admin" {
   path         = "/admin/initial-admin-user?token=${data.terraform_remote_state.tfe-infra.outputs.iact_token}"
   id_attribute = "status"
@@ -34,6 +38,7 @@ resource "restapi_object" "initial_admin" {
   })
 }
 
+# Capture the admin user token from the API response, this works once and only if the user is created successfully
 output "token" {
   value     = jsondecode(restapi_object.initial_admin.api_response).token
   sensitive = true

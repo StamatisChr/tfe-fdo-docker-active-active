@@ -12,6 +12,7 @@ packages:
   - ca-certificates
   - curl
 
+# Terraform Enterprise configuration yaml
 write_files:
   - path: /etc/terraform-enterprise/docker-compose.yml
     content: |
@@ -74,6 +75,7 @@ write_files:
         terraform-enterprise-cache:
     permissions: '0640'
 
+# Create the systemd service file for Terraform Enterprise
   - path: /etc/systemd/system/terraform-enterprise.service
     content: |
       [Unit]
@@ -93,6 +95,7 @@ write_files:
 
 
 runcmd:
+# Install AWS CLI for s3 copy operations
   - snap install aws-cli --classic
 # Install Docker
   - install -m 0755 -d /etc/apt/keyrings
@@ -108,19 +111,19 @@ runcmd:
 # Create necessary directories
   - mkdir -p ${tfe_host_path_to_certificates}
 # copy certificate files from s3
-  - aws s3 cp s3://${tfe_shared_bucket_name}/certificate.pem /tmp/
-  - aws s3 cp s3://${tfe_shared_bucket_name}/chain.pem /tmp/
-  - aws s3 cp s3://${tfe_shared_bucket_name}/private.key /tmp/
-  - cat /tmp/chain.pem >> /tmp/certificate.pem
-  - cp /tmp/certificate.pem ${tfe_host_path_to_certificates}/${cert}
-  - cp /tmp/private.key ${tfe_host_path_to_certificates}/${key}
-  - cp /tmp/certificate.pem ${tfe_host_path_to_certificates}/${bundle}
-  - chmod 400 ${tfe_host_path_to_certificates}/${cert}
+  - aws s3 cp s3://${tfe_shared_bucket_name}/certificate.pem ${tfe_host_path_to_certificates}/certificate.pem
+  - aws s3 cp s3://${tfe_shared_bucket_name}/chain.pem ${tfe_host_path_to_certificates}/chain.pem
+  - aws s3 cp s3://${tfe_shared_bucket_name}/private.key ${tfe_host_path_to_certificates}/${key}
+# Create fullchain.pem, requirement with let's encrypt: https://developer.hashicorp.com/terraform/enterprise/deploy/prepare-host#create-tls-certificates
+  - cat ${tfe_host_path_to_certificates}/certificate.pem > ${tfe_host_path_to_certificates}/fullchain.pem
+  - cat ${tfe_host_path_to_certificates}/chain.pem >> ${tfe_host_path_to_certificates}/fullchain.pem
+# Set permissions for certificate files
   - chmod 400 ${tfe_host_path_to_certificates}/${key}
   - chmod 400 ${tfe_host_path_to_certificates}/${bundle}
 # Log in to the Terraform Enterprise container image registry and pull the image
   - echo "${tfe_license}" | docker login --username terraform images.releases.hashicorp.com --password-stdin
   - docker pull images.releases.hashicorp.com/hashicorp/terraform-enterprise:${tfe_version_image}
+# Update the local IP address in the docker-compose.yml
   - MYLOCALIP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
   - sed -i 's/REPLACE_WITH_SED/'$MYLOCALIP'/g' /etc/terraform-enterprise/docker-compose.yml
 # Enable and start the Terraform Enterprise service
