@@ -27,8 +27,17 @@ resource "local_file" "check_check_script" {
       echo "$(date +"%Y-%m-%d %H:%M:%S") Waiting TFE to start..."
       sleep 30
     done
-
     echo "$(date +"%Y-%m-%d %H:%M:%S") TFE is ready!"
+    sleep 5
+
+    cd ../01-create-initial-admin 
+    terraform init
+    terraform apply --auto-approve
+    sleep 5
+
+    cd ../02-tfe-org-ws
+    terraform init
+    terraform apply --auto-approve
   EOT
 }
 
@@ -59,6 +68,33 @@ resource "local_file" "null_tf_file" {
     EOT
 }
 
-output "tfe_status" {
-  value = "TFE is ready!"
+
+resource "local_file" "clean_up_script" {
+  filename = "../clean_up.sh"
+  content  = <<-EOT
+    #!/bin/bash
+
+    cd ./02-tfe-org-ws
+    terraform destroy --auto-approve
+    sleep 3
+    rm -rf terraform.tfstate
+    rm -rf terraform.tfstate.backup
+
+    cd ./01-create-initial-admin
+    terraform destroy --auto-approve
+    sleep 3
+    rm -rf terraform.tfstate
+    rm -rf terraform.tfstate.backup
+
+    cd ./00-wait-tfe-start
+    terraform destroy --auto-approve
+    sleep 3
+    rm -rf terraform.tfstate
+    rm -rf terraform.tfstate.backup
+
+    cd ..
+    terraform destroy --auto-approve
+    rm -rf 03-example-cli-driven-ws
+    rm -f clean_up.sh
+  EOT
 }

@@ -98,7 +98,7 @@ Example:
 Apply complete! Resources: 40 added, 0 changed, 0 destroyed.
 ```
 
-## Wait for TFE resources creation
+## Wait for TFE resources creation, setup admin user and TFE organization
 
 change directory:
 ```
@@ -114,41 +114,6 @@ terraform init
 terraform apply --auto-approve
 ```
 
-This can take 15-20 minutes.
-Wait until the run is completed.
-
-## Create initial admin user
-
-change directory:
-```
-cd ../01-create-initial-admin
-```
-
-run the terraform configuration:
-```
-terraform init
-```
-
-```
-terraform apply --auto-approve
-```
-When the run is finished continue to the next step.
-
-## Create a TFE organization and workspace
-
-change directory:
-```
-cd ../02-tfe-org-ws
-```
-
-run the terraform configuration:
-```
-terraform init
-```
-
-```
-terraform apply --auto-approve
-```
 
 When the run is finished use the output values to login to TFE.
 - Copy the `terraform_login` output command, paste it on your CLI and run it.
@@ -208,9 +173,8 @@ cd ..
 Now in the `tfe-fdo-docker-active-active` run:
 
 ```
-terraform destroy
+bash clean_up.sh
 ```
-type yes when prompted.
 
 Wait for the resources deletion. It can take 20 minutes or more.
 
