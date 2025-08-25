@@ -115,7 +115,7 @@ terraform apply --auto-approve
 ```
 
 
-When the run is finished use the output values to login to TFE.
+When the run is finished use the output values to login to TFE:
 - Copy the `terraform_login` output command, paste it on your CLI and run it.
 
 Type `yes` when prompted.
