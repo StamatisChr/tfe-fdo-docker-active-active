@@ -170,7 +170,7 @@ To delete all the infrastructure resources, run:
 cd ..
 ```
 
-Now in the `tfe-fdo-docker-active-active` run:
+Now in the `tfe-fdo-docker-active-active` directory, run:
 
 ```
 bash clean_up.sh
